@@ -1,9 +1,22 @@
-all: git-credential-keyring
+CC=gcc
+CFLAGS=-Wall -Wextra -Werror -O2
 
-git-credential-keyring: credential-keyring.c
-	gcc -Wall -Wextra -O2 -o git-credential-keyring \
-	    `pkg-config --cflags libgnomeui-2.0` \
-	    `pkg-config --cflags gnome-keyring-1` \
-	    credential-keyring.c \
-	    `pkg-config --libs gnome-keyring-1` \
-	    `pkg-config --libs libgnomeui-2.0`
+INCS:=$(shell pkg-config --cflags gnome-keyring-1)
+LIBS:=$(shell pkg-config --libs gnome-keyring-1)
+
+SRCS:=credential-keyring.c
+OBJS:=$(SRCS:.c=.o)
+
+EXE=git-credential-keyring
+
+all: $(EXE)
+
+%.o: %.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) $(INCS) -o $@ -c $<
+
+$(EXE): $(OBJS)
+	$(CC) -o $@ $(LDFLAGS) $^ $(LIBS)
+
+clean:
+	@rm -vf *.o
+	@rm -vf $(EXE)
