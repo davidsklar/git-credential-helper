@@ -20,34 +20,11 @@
 /*
  * Credits:
  * - GNOME Keyring API handling originally written by John Szakmeister
- * - credential struct and API simplified from git's credential.{h,c}
- * - ported to new helper protocol by Philipp A. Hartmann
+ * - ported to simplified helper API by Philipp A. Hartmann
  */
 
-#include <stdio.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
+#include <credential_helper.h>
 #include <gnome-keyring.h>
-
-struct credential
-{
-	char *protocol;
-	char *host;
-	char *path;
-	char *username;
-	char *password;
-};
-
-#define CREDENTIAL_INIT \
-  { 0,0,0,0,0 }
-
-static void die_errno(int err)
-{
-	fprintf(stderr, "fatal: %s\n", strerror(err));
-	exit(EXIT_FAILURE);
-}
 
 static void die_result(GnomeKeyringResult result)
 {
@@ -55,111 +32,7 @@ static void die_result(GnomeKeyringResult result)
 	exit(EXIT_FAILURE);
 }
 
-static void warning( const char* fmt, ... )
-{
-	va_list ap;
-
-	va_start(ap, fmt);
-	fprintf(stderr, "warning: ");
-	vfprintf(stderr, fmt, ap);
-	va_end(ap); 
-}
-
-static char *xstrdup(const char *str)
-{
-	char *ret = strdup(str);
-	if (!ret)
-		die_errno(errno);
-
-	return ret;
-}
-
-static void credential_init(struct credential* c)
-{
-	memset(c, 0, sizeof(*c));
-}
-
-static void credential_clear(struct credential* c)
-{
-	free(c->protocol);
-	free(c->host);
-	free(c->path);
-	free(c->username);
-	free(c->password);
-
-	credential_init(c);
-}
-
-static int credential_read(struct credential* c)
-{
-	char*   buf      = NULL;
-	size_t  buf_len  = 0;
-	ssize_t line_len = 0;
-
-	while( -1 != ( line_len = getline( &buf, &buf_len, stdin ) ) ) {
-		char *key   = buf;
-		char *value = strchr(buf, '=');
-
-		if(buf[line_len-1]=='\n')
-			buf[--line_len]='\0';
-
-		if(!line_len)
-			break;
-
-		if(!value) {
-			warning("invalid credential line: %s", key );
-			free(buf);
-			return -1;
-		}
-		*value++ = '\0';
-
-		if (!strcmp(key, "protocol")) {
-			free(c->protocol);
-			c->protocol = xstrdup(value);
-		} else if (!strcmp(key, "host")) {
-			free(c->host);
-			c->host = xstrdup(value);
-		} else if (!strcmp(key, "path")) {
-			free(c->path);
-			c->path = xstrdup(value);
-		} else if (!strcmp(key, "username")) {
-			free(c->username);
-			c->username = xstrdup(value);
-		} else if (!strcmp(key, "password")) {
-			free(c->password);
-			c->password = xstrdup(value);
-		}
-		/*
-		 * Ignore other lines; we don't know what they mean, but
-		 * this future-proofs us when later versions of git do
-		 * learn new lines, and the helpers are updated to match.
-		 */
-	}
-
-	free(buf);
-	return 0;
-}
-
-static void credential_write_item(FILE *fp, const char *key, const char *value)
-{
-	if (!value)
-		return;
-	fprintf(fp, "%s=%s\n", key, value);
-}
-
-static void credential_write(const struct credential *c)
-{
-	/* only write username/password, if set */
-#if 0
-	credential_write_item(stdout, "protocol", c->protocol);
-	credential_write_item(stdout, "host", c->host);
-	credential_write_item(stdout, "path", c->path);
-#endif
-	credential_write_item(stdout, "username", c->username);
-	credential_write_item(stdout, "password", c->password);
-}
-
-/*  */
+/* create a special keyring option string, if path is given */
 static char* keyring_object(struct credential* c)
 {
 	char* object = NULL;
@@ -175,7 +48,7 @@ static char* keyring_object(struct credential* c)
 	return object;
 }
 
-int keyring_get( struct credential* c )
+int keyring_get(struct credential* c)
 {
 	int ret = EXIT_SUCCESS;
 
@@ -320,49 +193,14 @@ int keyring_erase( struct credential* c )
 	return ret;
 }
 
-typedef int (*operation_cb)(struct credential *);
-
-static
-struct helper_operation
-{
-	char         *name;
-	operation_cb op;
-}
-const helper_ops[] =
+/*
+ * Table with helper operation callbacks, used by generic
+ * credential helper main function.
+ */
+struct credential_operation const credential_helper_ops[] =
 {
 		{ "get",   keyring_get   }
 	, { "store", keyring_store }
 	, { "erase", keyring_erase }
-	, { NULL, NULL }
+	, CREDENTIAL_OP_END
 };
-
-int main(int argc, char *argv[])
-{
-	int ret = EXIT_SUCCESS;
-
-	struct helper_operation const *try_op = helper_ops;
-	struct credential              cred   = CREDENTIAL_INIT;
-
-	/* TODO: add options support (e.g. select keyring) */
-	if (argc!=2)
-		goto out;
-
-	/* lookup operation callback */
-	while(try_op->name && strcmp(argv[1],try_op->name))
-		try_op++;
-
-	/* unsupported operation given -- ignore silently */
-	if(!try_op->name || !try_op->op)
-		goto out;
-
-	credential_read(&cred);
-
-	/* perform credential operation */
-	ret = (*try_op->op)(&cred);
-
-	credential_write(&cred);
-	credential_clear(&cred);
-
-out:
-	return ret;
-}
