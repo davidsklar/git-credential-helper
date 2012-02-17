@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2011 John Szakmeister <john@szakmeister.net>
+ *               2012 Philipp A. Hartmann <pah@qo.cx>
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -16,341 +17,352 @@
  *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+/*
+ * Credits:
+ * - GNOME Keyring API handling originally written by John Szakmeister
+ * - credential struct and API simplified from git's credential.{h,c}
+ * - ported to new helper protocol by Philipp A. Hartmann
+ */
+
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <getopt.h>
 #include <errno.h>
 #include <gnome-keyring.h>
-#include <libgnomeui/libgnomeui.h>
 
-
-struct url_parts
+struct credential
 {
-    char *protocol;
-    char *server;
+	char *protocol;
+	char *host;
+	char *path;
+	char *username;
+	char *password;
 };
 
+#define CREDENTIAL_INIT \
+  { 0,0,0,0,0 }
 
-static void
-die(const char *fmt, ...)
+static void die_errno(int err)
 {
-    va_list ap;
+	fprintf(stderr, "fatal: %s\n", strerror(err));
+	exit(EXIT_FAILURE);
+}
 
-    va_start(ap, fmt);
-    (void) fprintf(stderr, "fatal: ");
-    (void) vfprintf(stderr, fmt, ap);
-    va_end(ap);
-    exit(1);
+static void die_result(GnomeKeyringResult result)
+{
+	fprintf(stderr, "fatal: %s\n",gnome_keyring_result_to_message(result));
+	exit(EXIT_FAILURE);
+}
+
+static void warning( const char* fmt, ... )
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	fprintf(stderr, "warning: ");
+	vfprintf(stderr, fmt, ap);
+	va_end(ap); 
+}
+
+static char *xstrdup(const char *str)
+{
+	char *ret = strdup(str);
+	if (!ret)
+		die_errno(errno);
+
+	return ret;
+}
+
+static void credential_init(struct credential* c)
+{
+	memset(c, 0, sizeof(*c));
+}
+
+static void credential_clear(struct credential* c)
+{
+	free(c->protocol);
+	free(c->host);
+	free(c->path);
+	free(c->username);
+	free(c->password);
+
+	credential_init(c);
+}
+
+static int credential_read(struct credential* c)
+{
+	char*   buf      = NULL;
+	size_t  buf_len  = 0;
+	ssize_t line_len = 0;
+
+	while( -1 != ( line_len = getline( &buf, &buf_len, stdin ) ) ) {
+		char *key   = buf;
+		char *value = strchr(buf, '=');
+
+		if(buf[line_len-1]=='\n')
+			buf[--line_len]='\0';
+
+		if(!line_len)
+			break;
+
+		if(!value) {
+			warning("invalid credential line: %s", key );
+			free(buf);
+			return -1;
+		}
+		*value++ = '\0';
+
+		if (!strcmp(key, "protocol")) {
+			free(c->protocol);
+			c->protocol = xstrdup(value);
+		} else if (!strcmp(key, "host")) {
+			free(c->host);
+			c->host = xstrdup(value);
+		} else if (!strcmp(key, "path")) {
+			free(c->path);
+			c->path = xstrdup(value);
+		} else if (!strcmp(key, "username")) {
+			free(c->username);
+			c->username = xstrdup(value);
+		} else if (!strcmp(key, "password")) {
+			free(c->password);
+			c->password = xstrdup(value);
+		}
+		/*
+		 * Ignore other lines; we don't know what they mean, but
+		 * this future-proofs us when later versions of git do
+		 * learn new lines, and the helpers are updated to match.
+		 */
+	}
+
+	free(buf);
+	return 0;
+}
+
+static void credential_write_item(FILE *fp, const char *key, const char *value)
+{
+	if (!value)
+		return;
+	fprintf(fp, "%s=%s\n", key, value);
+}
+
+static void credential_write(const struct credential *c)
+{
+	/* only write username/password, if set */
+#if 0
+	credential_write_item(stdout, "protocol", c->protocol);
+	credential_write_item(stdout, "host", c->host);
+	credential_write_item(stdout, "path", c->path);
+#endif
+	credential_write_item(stdout, "username", c->username);
+	credential_write_item(stdout, "password", c->password);
+}
+
+/*  */
+static char* keyring_object(struct credential* c)
+{
+	char* object = NULL;
+
+	if (!c->path)
+		return object;
+
+	object = (char*) malloc(strlen(c->host)+strlen(c->path)+2);
+	if(!object)
+		die_errno(errno);
+
+	sprintf(object,"%s/%s",c->host,c->path);
+	return object;
+}
+
+int keyring_get( struct credential* c )
+{
+	int ret = EXIT_SUCCESS;
+
+	char* object = NULL;
+	GList *entries;
+	GnomeKeyringNetworkPasswordData *password_data;
+	GnomeKeyringResult result;
+
+	/*
+	 * sanity check that what we're being asked for something sensible
+	 */
+	if (!c->protocol || !(c->host || c->path))
+		return ret;
+
+	object = keyring_object(c);
+
+	result = gnome_keyring_find_network_password_sync(
+				c->username,
+				NULL /* domain */,
+				c->host,
+				object,
+				c->protocol,
+				NULL /* authtype */,
+				0    /* port */,
+				&entries);
+
+	free(object);
+
+	if (result == GNOME_KEYRING_RESULT_NO_MATCH)
+		return ret;
+
+	if (result == GNOME_KEYRING_RESULT_CANCELLED)
+		return ret;
+
+	if (result != GNOME_KEYRING_RESULT_OK)
+		die_result(result);
+
+	/* pick the first one from the list */
+	password_data = (GnomeKeyringNetworkPasswordData *) entries->data;
+
+	free(c->password);
+	c->password = xstrdup(password_data->password);
+
+	if (!c->username)
+		c->username = xstrdup(password_data->user);
+
+	gnome_keyring_network_password_list_free(entries);
+
+  return ret;
 }
 
 
-static void
-die_errno(int err)
+int keyring_store(struct credential* c)
 {
-    (void) fprintf(stderr, "fatal: %s\n", strerror(err));
-    exit(1);
+	int ret = EXIT_SUCCESS;
+	guint32 item_id;
+	char  *object = NULL;
+
+	/*
+	 * Sanity check that what we are storing is actually sensible.
+	 * In particular, we can't make a URL without a protocol field.
+	 * Without either a host or pathname (depending on the scheme),
+	 * we have no primary key. And without a username and password,
+	 * we are not actually storing a credential.
+	 */
+	if (!c->protocol || !(c->host || c->path) ||
+	    !c->username || !c->password)
+		return ret;
+
+	object = keyring_object(c);
+
+	gnome_keyring_set_network_password_sync(
+				GNOME_KEYRING_DEFAULT,
+				c->username,
+				NULL /* domain */,
+				c->host,
+				object,
+				c->protocol,
+				NULL /* authtype */,
+				0 /* port */,
+				c->password,
+				&item_id);
+
+	free(object);
+	return ret;
 }
 
-
-static void
-die_result(GnomeKeyringResult result)
+int keyring_erase( struct credential* c )
 {
-    (void) fprintf(stderr, "fatal: %s\n",
-        gnome_keyring_result_to_message(result));
-    exit(1);
+	int ret = EXIT_SUCCESS;
+
+	char  *object = NULL;
+	GList *entries;
+	GnomeKeyringNetworkPasswordData *password_data;
+	GnomeKeyringResult result;
+
+	/*
+	 * Sanity check that we actually have something to match
+	 * against. The input we get is a restrictive pattern,
+	 * so technically a blank credential means "erase everything".
+	 * But it is too easy to accidentally send this, since it is equivalent
+	 * to empty input. So explicitly disallow it, and require that the
+	 * pattern have some actual content to match.
+	 */
+	if (!c->protocol && !c->host && !c->path && !c->username)
+		return ret;
+
+	object = keyring_object(c);
+
+	result = gnome_keyring_find_network_password_sync(
+				c->username,
+				NULL /* domain */,
+				c->host,
+				object,
+				c->protocol,
+				NULL /* authtype */,
+				0 /* port */,
+				&entries);
+
+	free(object);
+
+	if (result == GNOME_KEYRING_RESULT_NO_MATCH)
+		return ret;
+
+	if (result == GNOME_KEYRING_RESULT_CANCELLED)
+		return ret;
+
+	if (result != GNOME_KEYRING_RESULT_OK)
+		die_result(result);
+
+	/* pick the first one from the list (delete all matches?) */
+	password_data = (GnomeKeyringNetworkPasswordData *) entries->data;
+
+	result = gnome_keyring_item_delete_sync(
+		password_data->keyring, password_data->item_id);
+
+	gnome_keyring_network_password_list_free(entries);
+
+	if (result != GNOME_KEYRING_RESULT_OK)
+		die_result(result);
+
+	return ret;
 }
 
+typedef int (*operation_cb)(struct credential *);
 
-static char *
-xstrdup(const char *str)
+static
+struct helper_operation
 {
-    char *ret = strdup(str);
-    if (! ret)
-    {
-        die_errno(errno);
-    }
-
-    return ret;
+	char         *name;
+	operation_cb op;
 }
-
-
-static void
-remove_credential(const char *username, const struct url_parts *parts)
+const helper_ops[] =
 {
-    GList *entries;
-    GnomeKeyringNetworkPasswordData *passwordData;
-    GnomeKeyringResult result;
+		{ "get",   keyring_get   }
+	, { "store", keyring_store }
+	, { "erase", keyring_erase }
+	, { NULL, NULL }
+};
 
-    result = gnome_keyring_find_network_password_sync(
-        username,
-        NULL /* domain */,
-        parts->server,
-        NULL /* object */,
-        parts->protocol,
-        NULL /* authtype */,
-        0 /* port */,
-        &entries);
-
-    if (result == GNOME_KEYRING_RESULT_NO_MATCH)
-        return;
-
-    if (result == GNOME_KEYRING_RESULT_CANCELLED)
-        return;
-
-    if (result != GNOME_KEYRING_RESULT_OK)
-    {
-        die_result(result);
-    }
-
-    /* Pick the first one from the list. */
-    passwordData = (GnomeKeyringNetworkPasswordData *) entries->data;
-
-    result = gnome_keyring_item_delete_sync(
-        passwordData->keyring, passwordData->item_id);
-
-    gnome_keyring_network_password_list_free(entries);
-
-    if (result != GNOME_KEYRING_RESULT_OK)
-        die_result(result);
-
-    return;
-}
-
-
-static const char *
-lookup_credential(
-    const char **username,
-    const struct url_parts *parts,
-    int *cancelled)
+int main(int argc, char *argv[])
 {
-    const char *password = NULL;
-    GList *entries;
-    GnomeKeyringNetworkPasswordData *passwordData;
-    GnomeKeyringResult result;
+	int ret = EXIT_SUCCESS;
 
-    *cancelled = 0;
+	struct helper_operation const *try_op = helper_ops;
+	struct credential              cred   = CREDENTIAL_INIT;
 
-    result = gnome_keyring_find_network_password_sync(
-        *username,
-        NULL /* domain */,
-        parts->server,
-        NULL /* object */,
-        parts->protocol,
-        NULL /* authtype */,
-        0 /* port */,
-        &entries);
+	/* TODO: add options support (e.g. select keyring) */
+	if (argc!=2)
+		goto out;
 
-    if (result == GNOME_KEYRING_RESULT_NO_MATCH)
-        return NULL;
+	/* lookup operation callback */
+	while(try_op->name && strcmp(argv[1],try_op->name))
+		try_op++;
 
-    if (result == GNOME_KEYRING_RESULT_CANCELLED)
-    {
-        *cancelled = 1;
-        return NULL;
-    }
+	/* unsupported operation given -- ignore silently */
+	if(!try_op->name || !try_op->op)
+		goto out;
 
-    if (result != GNOME_KEYRING_RESULT_OK)
-    {
-        die_result(result);
-    }
+	credential_read(&cred);
 
-    /* Pick the first one from the list. */
-    passwordData = (GnomeKeyringNetworkPasswordData *) entries->data;
+	/* perform credential operation */
+	ret = (*try_op->op)(&cred);
 
-    password = xstrdup(passwordData->password);
+	credential_write(&cred);
+	credential_clear(&cred);
 
-    if (*username == NULL)
-        *username = xstrdup(passwordData->user);
-
-    gnome_keyring_network_password_list_free(entries);
-
-    return password;
-}
-
-
-static void
-store_credential(
-    struct url_parts *parts,
-    const char *username,
-    const char *password)
-{
-    guint32 item_id;
-    gnome_keyring_set_network_password_sync(
-        GNOME_KEYRING_DEFAULT,
-        username,
-        NULL /* domain */,
-        parts->server,
-        NULL /* object */,
-        parts->protocol,
-        NULL /* authtype */,
-        0 /* port */,
-        password,
-        &item_id);
-    return;
-}
-
-
-static void
-split_unique(struct url_parts *parts, const char *token)
-{
-    char *tmp = xstrdup(token);
-    char *pch;
-
-    /* Get the protocol */
-    pch = strtok(tmp, ":");
-    if (! pch)
-    {
-        die("invalid token passed: '%s'", token);
-    }
-
-    parts->protocol = xstrdup(pch);
-
-    pch = strtok(NULL, ":");
-    if (! pch)
-    {
-        die("invalid token passed: '%s'", token);
-    }
-
-    parts->server = xstrdup(pch);
-
-    free(tmp);
-}
-
-
-static int
-ask_credentials_gui(const char **username, const char **password)
-{
-    GtkWidget *dialog;
-    gboolean result;
-
-    dialog = gnome_password_dialog_new(
-        "Password for XXX",
-        "Please enter password for XXX",
-        *username,
-        NULL,
-        FALSE);
-
-    gnome_password_dialog_set_show_username(
-        GNOME_PASSWORD_DIALOG(dialog), TRUE);
-    if (*username)
-        gnome_password_dialog_set_username(
-            GNOME_PASSWORD_DIALOG(dialog), *username);
-
-    gnome_password_dialog_set_show_password(
-        GNOME_PASSWORD_DIALOG(dialog), TRUE);
-
-    result = gnome_password_dialog_run_and_block(
-        GNOME_PASSWORD_DIALOG(dialog));
-    if (result == FALSE)
-    {
-        gtk_widget_destroy(dialog);
-        return 0;
-    }
-
-    *username = xstrdup(
-        gnome_password_dialog_get_username(GNOME_PASSWORD_DIALOG(dialog)));
-    *password = xstrdup(
-        gnome_password_dialog_get_password(GNOME_PASSWORD_DIALOG(dialog)));
-
-    gtk_widget_destroy(dialog);
-    return 1;
-}
-
-
-int
-main(int argc, char *argv[])
-{
-    int reject = 0;
-    const char *username = NULL;
-    char *description = NULL;
-    char *unique = NULL;
-    int c;
-    int option_index = 0;
-    struct url_parts parts;
-    const char *password;
-    int cancelled;
-
-    struct option long_options[] =
-    {
-        {"reject", no_argument, &reject, 1},
-        {"username", required_argument, 0, 'u'},
-        {"description", required_argument, 0, 'd'},
-        {"unique", required_argument, 0, 't'},
-        {0, 0, 0, 0},
-    };
-
-    gtk_init(&argc, &argv);
-
-    for (;;)
-    {
-        c = getopt_long(argc, argv, "", long_options, &option_index);
-
-        if (c == -1)
-            break;
-
-        switch (c)
-        {
-        case 0:
-            break;
-
-        case 'u':
-            username = optarg;
-            break;
-        case 'd':
-            description = optarg;
-            break;
-        case 't':
-            unique = optarg;
-            break;
-
-        case '?':
-            /* getopt already printed an error message. */
-            break;
-
-        default:
-            die("unrecognized option");
-        }
-    }
-
-    if (optind < argc)
-    {
-        die("fatal: unrecognized arguments passed "
-            "to git-credential-keyring.\n");
-        gtk_exit(1);
-    }
-
-    if (! unique)
-    {
-        /* Not sure what to do here... so pass on it for now. */
-        gtk_exit(0);
-    }
-
-    split_unique(&parts, unique);
-
-    if (reject)
-    {
-        remove_credential(username, &parts);
-        gtk_exit(0);
-    }
-
-    password = lookup_credential(&username, &parts, &cancelled);
-    if (! password)
-    {
-        if (cancelled)
-            gtk_exit(0);
-
-        if (! ask_credentials_gui(&username, &password))
-        {
-            gtk_exit(0);
-        }
-
-        store_credential(&parts, username, password);
-    }
-
-    printf("username=%s\npassword=%s\n", username, password);
-
-    gtk_exit(0);
-    return 0;
+out:
+	return ret;
 }
