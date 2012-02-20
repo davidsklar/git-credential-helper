@@ -97,7 +97,7 @@ int keyring_get(struct credential* c)
 
 	gnome_keyring_network_password_list_free(entries);
 
-  return ret;
+	return ret;
 }
 
 
@@ -199,7 +199,7 @@ int keyring_erase( struct credential* c )
  */
 struct credential_operation const credential_helper_ops[] =
 {
-		{ "get",   keyring_get   }
+	  { "get",   keyring_get   }
 	, { "store", keyring_store }
 	, { "erase", keyring_erase }
 	, CREDENTIAL_OP_END
