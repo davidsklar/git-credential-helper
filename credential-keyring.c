@@ -50,8 +50,6 @@ static char* keyring_object(struct credential* c)
 
 int keyring_get(struct credential* c)
 {
-	int ret = EXIT_SUCCESS;
-
 	char* object = NULL;
 	GList *entries;
 	GnomeKeyringNetworkPasswordData *password_data;
@@ -61,7 +59,7 @@ int keyring_get(struct credential* c)
 	 * sanity check that what we're being asked for something sensible
 	 */
 	if (!c->protocol || !(c->host || c->path))
-		return ret;
+		return EXIT_FAILURE;
 
 	object = keyring_object(c);
 
@@ -78,10 +76,10 @@ int keyring_get(struct credential* c)
 	free(object);
 
 	if (result == GNOME_KEYRING_RESULT_NO_MATCH)
-		return ret;
+		return EXIT_SUCCESS;
 
 	if (result == GNOME_KEYRING_RESULT_CANCELLED)
-		return ret;
+		return EXIT_SUCCESS;
 
 	if (result != GNOME_KEYRING_RESULT_OK)
 		die_result(result);
@@ -97,13 +95,12 @@ int keyring_get(struct credential* c)
 
 	gnome_keyring_network_password_list_free(entries);
 
-	return ret;
+	return EXIT_SUCCESS;
 }
 
 
 int keyring_store(struct credential* c)
 {
-	int ret = EXIT_SUCCESS;
 	guint32 item_id;
 	char  *object = NULL;
 
@@ -116,7 +113,7 @@ int keyring_store(struct credential* c)
 	 */
 	if (!c->protocol || !(c->host || c->path) ||
 	    !c->username || !c->password)
-		return ret;
+		return EXIT_FAILURE;
 
 	object = keyring_object(c);
 
@@ -133,13 +130,11 @@ int keyring_store(struct credential* c)
 				&item_id);
 
 	free(object);
-	return ret;
+	return EXIT_SUCCESS;
 }
 
 int keyring_erase( struct credential* c )
 {
-	int ret = EXIT_SUCCESS;
-
 	char  *object = NULL;
 	GList *entries;
 	GnomeKeyringNetworkPasswordData *password_data;
@@ -154,7 +149,7 @@ int keyring_erase( struct credential* c )
 	 * pattern have some actual content to match.
 	 */
 	if (!c->protocol && !c->host && !c->path && !c->username)
-		return ret;
+		return EXIT_FAILURE;
 
 	object = keyring_object(c);
 
@@ -171,10 +166,10 @@ int keyring_erase( struct credential* c )
 	free(object);
 
 	if (result == GNOME_KEYRING_RESULT_NO_MATCH)
-		return ret;
+		return EXIT_SUCCESS;
 
 	if (result == GNOME_KEYRING_RESULT_CANCELLED)
-		return ret;
+		return EXIT_SUCCESS;
 
 	if (result != GNOME_KEYRING_RESULT_OK)
 		die_result(result);
@@ -190,7 +185,7 @@ int keyring_erase( struct credential* c )
 	if (result != GNOME_KEYRING_RESULT_OK)
 		die_result(result);
 
-	return ret;
+	return EXIT_SUCCESS;
 }
 
 /*
