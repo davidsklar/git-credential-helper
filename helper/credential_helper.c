@@ -110,6 +110,21 @@ void credential_write(const struct credential *c)
 	credential_write_item(stdout, "password", c->password);
 }
 
+static void usage(const char *name)
+{
+	struct credential_operation const *try_op = credential_helper_ops;
+	const char *basename = strrchr(name,'/');
+
+	basename = (basename) ? basename + 1 : name;
+	fprintf(stderr, "Usage: %s <", basename);
+	while(try_op->name) {
+		fprintf(stderr,"%s",(try_op++)->name);
+		if(try_op->name)
+			fprintf(stderr,"%s","|");
+	}
+	fprintf(stderr,"%s",">\n");
+}
+
 /* 
  * generic main function for credential helpers
  */
@@ -120,9 +135,10 @@ int main(int argc, char *argv[])
 	struct credential_operation const *try_op = credential_helper_ops;
 	struct credential                  cred   = CREDENTIAL_INIT;
 
-	/* TODO: add options support (e.g. select keyring) */
-	if (argc!=2)
+	if (!argv[1]) {
+		usage(argv[0]);
 		goto out;
+  }
 
 	/* lookup operation callback */
 	while(try_op->name && strcmp(argv[1], try_op->name))
