@@ -1,21 +1,13 @@
 /*
  * Copyright (C) 2012 Philipp A. Hartmann <pah@qo.cx>
  *
- *  This program is free software; you can redistribute it and/or modify
- *  it under the terms of the GNU General Public License as published by
- *  the Free Software Foundation; either version 2 of the License, or
- *  (at your option) any later version.
+ * This file is licensed under the GPL v2, or a later version
+ * at the discretion of Linus.
  *
- *  This program is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU General Public License for more details.
- *
- *  You should have received a copy of the GNU General Public License
- *  along with this program; if not, write to the Free Software
- *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * This credential struct and API simplified from git's
+ * credential.{h,c} to be used within credential helper
+ * implementations.
  */
-
 #ifndef CREDENTIAL_HELPER_H_INCLUDED_
 #define CREDENTIAL_HELPER_H_INCLUDED_
 
@@ -24,12 +16,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <errno.h>
-
-/*
- * This credential struct and API simplified from git's
- * credential.{h,c} to be used within credential helper
- * implementations.
- */
 
 struct credential
 {
@@ -61,8 +47,9 @@ struct credential_operation
 
 /*
  * Table with operation callbacks is defined in concrete
- * credential helper implementation.
- *
+ * credential helper implementation and contains entries
+ * like { "get", function_to_get_credential } terminated
+ * by CREDENTIAL_OP_END.
  */
 extern struct credential_operation const credential_helper_ops[];
 
