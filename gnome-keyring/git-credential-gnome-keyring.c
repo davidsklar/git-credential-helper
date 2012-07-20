@@ -26,12 +26,6 @@
 #include <credential_helper.h>
 #include <gnome-keyring.h>
 
-static void die_result(GnomeKeyringResult result)
-{
-	fprintf(stderr, "fatal: %s\n",gnome_keyring_result_to_message(result));
-	exit(EXIT_FAILURE);
-}
-
 /* create a special keyring option string, if path is given */
 static char* keyring_object(struct credential* c)
 {
@@ -55,9 +49,6 @@ int keyring_get(struct credential* c)
 	GnomeKeyringNetworkPasswordData *password_data;
 	GnomeKeyringResult result;
 
-	/*
-	 * sanity check that what we're being asked for something sensible
-	 */
 	if (!c->protocol || !(c->host || c->path))
 		return EXIT_FAILURE;
 
@@ -81,8 +72,10 @@ int keyring_get(struct credential* c)
 	if (result == GNOME_KEYRING_RESULT_CANCELLED)
 		return EXIT_SUCCESS;
 
-	if (result != GNOME_KEYRING_RESULT_OK)
-		die_result(result);
+	if (result != GNOME_KEYRING_RESULT_OK) {
+		error("%s",gnome_keyring_result_to_message(result));
+		return EXIT_FAILURE;
+	}
 
 	/* pick the first one from the list */
 	password_data = (GnomeKeyringNetworkPasswordData *) entries->data;
@@ -172,7 +165,10 @@ int keyring_erase( struct credential* c )
 		return EXIT_SUCCESS;
 
 	if (result != GNOME_KEYRING_RESULT_OK)
-		die_result(result);
+	{
+		error("%s",gnome_keyring_result_to_message(result));
+		return EXIT_FAILURE;
+	}
 
 	/* pick the first one from the list (delete all matches?) */
 	password_data = (GnomeKeyringNetworkPasswordData *) entries->data;
@@ -183,7 +179,10 @@ int keyring_erase( struct credential* c )
 	gnome_keyring_network_password_list_free(entries);
 
 	if (result != GNOME_KEYRING_RESULT_OK)
-		die_result(result);
+	{
+		error("%s",gnome_keyring_result_to_message(result));
+		return EXIT_FAILURE;
+	}
 
 	return EXIT_SUCCESS;
 }
@@ -194,8 +193,8 @@ int keyring_erase( struct credential* c )
  */
 struct credential_operation const credential_helper_ops[] =
 {
-	  { "get",   keyring_get   }
-	, { "store", keyring_store }
-	, { "erase", keyring_erase }
-	, CREDENTIAL_OP_END
+	{ "get",   keyring_get   },
+	{ "store", keyring_store },
+	{ "erase", keyring_erase },
+	CREDENTIAL_OP_END
 };
