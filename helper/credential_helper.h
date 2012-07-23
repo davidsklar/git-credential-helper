@@ -55,20 +55,42 @@ extern struct credential_operation const credential_helper_ops[];
 
 /* ---------------- helper functions ---------------- */
 
-static inline void die_errno(int err)
-{
-	fprintf(stderr, "fatal: %s\n", strerror(err));
-	exit(EXIT_FAILURE);
-}
-
-static inline void warning( const char* fmt, ... )
+static inline void warning(const char *fmt, ...)
 {
 	va_list ap;
 
 	va_start(ap, fmt);
 	fprintf(stderr, "warning: ");
 	vfprintf(stderr, fmt, ap);
-	va_end(ap); 
+	fprintf(stderr, "\n" );
+	va_end(ap);
+}
+
+static inline void error(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap, fmt);
+	fprintf(stderr, "error: ");
+	vfprintf(stderr, fmt, ap);
+	fprintf(stderr, "\n" );
+	va_end(ap);
+}
+
+static inline void die(const char *fmt, ...)
+{
+	va_list ap;
+
+	va_start(ap,fmt);
+	error(fmt, ap);
+	va_end(ap);
+	exit(EXIT_FAILURE);
+}
+
+static inline void die_errno(int err)
+{
+	error("%s", strerror(err));
+	exit(EXIT_FAILURE);
 }
 
 static inline char *xstrdup(const char *str)

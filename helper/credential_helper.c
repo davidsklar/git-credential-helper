@@ -88,11 +88,6 @@ void credential_write_item(FILE *fp, const char *key, const char *value)
 void credential_write(const struct credential *c)
 {
 	/* only write username/password, if set */
-#if 0
-	credential_write_item(stdout, "protocol", c->protocol);
-	credential_write_item(stdout, "host", c->host);
-	credential_write_item(stdout, "path", c->path);
-#endif
 	credential_write_item(stdout, "username", c->username);
 	credential_write_item(stdout, "password", c->password);
 }
@@ -135,7 +130,9 @@ int main(int argc, char *argv[])
 	if(!try_op->name || !try_op->op)
 		goto out;
 
-	credential_read(&cred);
+	ret = credential_read(&cred);
+	if(ret)
+		goto out;
 
 	/* perform credential operation */
 	ret = (*try_op->op)(&cred);
