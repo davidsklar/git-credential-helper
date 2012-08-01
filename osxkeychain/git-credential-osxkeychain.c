@@ -19,15 +19,6 @@ static SecProtocolType protocol;
 	protocol, \
 	kSecAuthenticationTypeDefault
 
-static inline char *xstrndup(const char *str, size_t len)
-{
-	char *ret = strndup(str,len);
-	if (!ret)
-		die_errno(errno);
-
-	return ret;
-}
-
 static int prepare_internet_password(struct credential *c)
 {
 	if (!c->protocol || !c->host)
