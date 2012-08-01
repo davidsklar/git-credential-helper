@@ -7,7 +7,6 @@
 #include <Security/Security.h>
 
 static SecProtocolType protocol;
-static UInt16 port;
 
 #define KEYCHAIN_ITEM(x) (x ? strlen(x) : 0), x
 #define KEYCHAIN_ARGS(c) \
@@ -16,7 +15,7 @@ static UInt16 port;
 	0, NULL, /* account domain */ \
 	KEYCHAIN_ITEM(c->username), \
 	KEYCHAIN_ITEM(c->path), \
-	port, \
+	(UInt16) c->port, \
 	protocol, \
 	kSecAuthenticationTypeDefault
 
@@ -31,8 +30,6 @@ static inline char *xstrndup(const char *str, size_t len)
 
 static int prepare_internet_password(struct credential *c)
 {
-	char *colon;
-
 	if (!c->protocol || !c->host)
 		return -1;
 
@@ -43,11 +40,6 @@ static int prepare_internet_password(struct credential *c)
 	else /* we don't yet handle other protocols */
 		return -1;
 
-	colon = strchr(c->host, ':');
-	if (colon) {
-		*colon++ = '\0';
-		port = atoi(colon);
-	}
 	return 0;
 }
 

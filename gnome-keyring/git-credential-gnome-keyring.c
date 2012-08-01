@@ -34,11 +34,15 @@ static char* keyring_object(struct credential* c)
 	if (!c->path)
 		return object;
 
-	object = (char*) malloc(strlen(c->host)+strlen(c->path)+2);
+	object = (char*) malloc(strlen(c->host)+strlen(c->path)+8);
 	if(!object)
 		die_errno(errno);
 
-	sprintf(object,"%s/%s",c->host,c->path);
+	if(c->port)
+		sprintf(object,"%s:%hd/%s",c->host,c->port,c->path);
+	else
+		sprintf(object,"%s/%s",c->host,c->path);
+
 	return object;
 }
 
@@ -61,7 +65,7 @@ int keyring_get(struct credential* c)
 				object,
 				c->protocol,
 				NULL /* authtype */,
-				0    /* port */,
+				c->port,
 				&entries);
 
 	free(object);
@@ -118,7 +122,7 @@ int keyring_store(struct credential* c)
 				object,
 				c->protocol,
 				NULL /* authtype */,
-				0 /* port */,
+				c->port,
 				c->password,
 				&item_id);
 
@@ -153,7 +157,7 @@ int keyring_erase( struct credential* c )
 				object,
 				c->protocol,
 				NULL /* authtype */,
-				0 /* port */,
+				c->port,
 				&entries);
 
 	free(object);
