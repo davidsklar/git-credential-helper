@@ -87,9 +87,10 @@ static int find_internet_password(struct credential *c)
 	c->password = xstrndup(buf, len);
 
 	if (!c->username)
-		find_username_in_item(item);
+		find_username_in_item(item, c);
 
 	SecKeychainItemFreeContent(NULL, buf);
+	return EXIT_SUCCESS;
 }
 
 static int delete_internet_password(struct credential *c)
@@ -111,7 +112,10 @@ static int delete_internet_password(struct credential *c)
 	if (SecKeychainFindInternetPassword(KEYCHAIN_ARGS(c), 0, NULL, &item))
 		return EXIT_SUCCESS;
 
-	SecKeychainItemDelete(item);
+	if (!SecKeychainItemDelete(item))
+		return EXIT_SUCCESS;
+
+	return EXIT_FAILURE;
 }
 
 static int add_internet_password(struct credential *c)
@@ -125,7 +129,7 @@ static int add_internet_password(struct credential *c)
 
 	if (SecKeychainAddInternetPassword(
 	      KEYCHAIN_ARGS(c),
-	      KEYCHAIN_ITEM(password),
+	      KEYCHAIN_ITEM(c->password),
 	      NULL))
 		return EXIT_FAILURE;
 
