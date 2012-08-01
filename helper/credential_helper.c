@@ -29,14 +29,14 @@ void credential_clear(struct credential* c)
 
 int credential_read(struct credential* c)
 {
-	char*   buf      = NULL;
-	size_t  buf_len  = 0;
+	char    buf[1024];
 	ssize_t line_len = 0;
+	char   *key      = buf;
+	char   *value;
 
-	while( -1 != (line_len = getline(&buf, &buf_len, stdin)))
+	while (fgets(buf, sizeof(buf), stdin))
   {
-		char *key   = buf;
-		char *value = strchr(buf, '=');
+		line_len = strlen(buf);
 
 		if(buf[line_len-1]=='\n')
 			buf[--line_len]='\0';
@@ -44,9 +44,9 @@ int credential_read(struct credential* c)
 		if(!line_len)
 			break;
 
+		value = strchr(buf,'=');
 		if(!value) {
 			warning("invalid credential line: %s", key);
-			free(buf);
 			return -1;
 		}
 		*value++ = '\0';
@@ -78,8 +78,6 @@ int credential_read(struct credential* c)
 		 * learn new lines, and the helpers are updated to match.
 		 */
 	}
-
-	free(buf);
 	return 0;
 }
 
