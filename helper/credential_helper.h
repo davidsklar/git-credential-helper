@@ -19,15 +19,16 @@
 
 struct credential
 {
-	char *protocol;
-	char *host;
-	char *path;
-	char *username;
-	char *password;
+	char          *protocol;
+	char          *host;
+	unsigned short port;
+	char          *path;
+	char          *username;
+	char          *password;
 };
 
 #define CREDENTIAL_INIT \
-  { 0,0,0,0,0 }
+  { 0,0,0,0,0,0 }
 
 void credential_init(struct credential* c);
 void credential_clear(struct credential* c);

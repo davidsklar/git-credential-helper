@@ -57,6 +57,11 @@ int credential_read(struct credential* c)
 		} else if (!strcmp(key, "host")) {
 			free(c->host);
 			c->host = xstrdup(value);
+			value = strrchr(c->host,':');
+			if (value) {
+				*value++ = '\0';
+				c->port = atoi(value);
+			}
 		} else if (!strcmp(key, "path")) {
 			free(c->path);
 			c->path = xstrdup(value);
