@@ -84,7 +84,7 @@ int keyring_get(struct credential* c)
 	/* pick the first one from the list */
 	password_data = (GnomeKeyringNetworkPasswordData *) entries->data;
 
-	free(c->password);
+	free_password(c->password);
 	c->password = xstrdup(password_data->password);
 
 	if (!c->username)
