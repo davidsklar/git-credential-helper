@@ -56,6 +56,16 @@ extern struct credential_operation const credential_helper_ops[];
 
 /* ---------------- helper functions ---------------- */
 
+static inline void free_password(char* password)
+{
+	char *c = password;
+	if (!password)
+		return;
+
+	while (*c) *c++ = '\0';
+	free(password);
+}
+
 static inline void warning(const char *fmt, ...)
 {
 	va_list ap;

@@ -22,7 +22,7 @@ void credential_clear(struct credential* c)
 	free(c->host);
 	free(c->path);
 	free(c->username);
-	free(c->password);
+	free_password(c->password);
 
 	credential_init(c);
 }
@@ -69,8 +69,9 @@ int credential_read(struct credential* c)
 			free(c->username);
 			c->username = xstrdup(value);
 		} else if (!strcmp(key, "password")) {
-			free(c->password);
+			free_password(c->password);
 			c->password = xstrdup(value);
+			while (*value) *value++ = '\0';
 		}
 		/*
 		 * Ignore other lines; we don't know what they mean, but
