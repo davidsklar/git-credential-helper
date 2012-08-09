@@ -66,8 +66,9 @@ static int find_internet_password(struct credential *c)
 	if (SecKeychainFindInternetPassword(KEYCHAIN_ARGS(c), &len, &buf, &item))
 		return EXIT_SUCCESS;
 
-	free(c->password);
+	free_password(c->password);
 	c->password = xstrndup(buf, len);
+	memset(buf,len,'\0');
 
 	if (!c->username)
 		find_username_in_item(item, c);
