@@ -30,9 +30,9 @@ struct credential
 #define CREDENTIAL_INIT \
   { 0,0,0,0,0,0 }
 
-void credential_init(struct credential* c);
-void credential_clear(struct credential* c);
-int  credential_read(struct credential* c);
+void credential_init(struct credential *c);
+void credential_clear(struct credential *c);
+int  credential_read(struct credential *c);
 void credential_write(const struct credential *c);
 
 typedef int (*credential_op_cb)(struct credential*);
@@ -56,7 +56,7 @@ extern struct credential_operation const credential_helper_ops[];
 
 /* ---------------- helper functions ---------------- */
 
-static inline void free_password(char* password)
+static inline void free_password(char *password)
 {
 	char *c = password;
 	if (!password)

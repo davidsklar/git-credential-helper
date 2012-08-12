@@ -11,12 +11,12 @@
 
 #include <credential_helper.h>
 
-void credential_init(struct credential* c)
+void credential_init(struct credential *c)
 {
 	memset(c, 0, sizeof(*c));
 }
 
-void credential_clear(struct credential* c)
+void credential_clear(struct credential *c)
 {
 	free(c->protocol);
 	free(c->host);
@@ -27,7 +27,7 @@ void credential_clear(struct credential* c)
 	credential_init(c);
 }
 
-int credential_read(struct credential* c)
+int credential_read(struct credential *c)
 {
 	char    buf[1024];
 	ssize_t line_len = 0;
@@ -35,7 +35,7 @@ int credential_read(struct credential* c)
 	char   *value;
 
 	while (fgets(buf, sizeof(buf), stdin))
-  {
+	{
 		line_len = strlen(buf);
 
 		if(buf[line_len-1]=='\n')
@@ -111,7 +111,7 @@ static void usage(const char *name)
 	fprintf(stderr,"%s",">\n");
 }
 
-/* 
+/*
  * generic main function for credential helpers
  */
 int main(int argc, char *argv[])
@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
 	if (!argv[1]) {
 		usage(argv[0]);
 		goto out;
-  }
+	}
 
 	/* lookup operation callback */
 	while(try_op->name && strcmp(argv[1], try_op->name))

@@ -27,7 +27,7 @@
 #include <gnome-keyring.h>
 
 /* create a special keyring option string, if path is given */
-static char* keyring_object(struct credential* c)
+static char* keyring_object(struct credential *c)
 {
 	char* object = NULL;
 
@@ -46,7 +46,7 @@ static char* keyring_object(struct credential* c)
 	return object;
 }
 
-int keyring_get(struct credential* c)
+int keyring_get(struct credential *c)
 {
 	char* object = NULL;
 	GList *entries;
@@ -96,7 +96,7 @@ int keyring_get(struct credential* c)
 }
 
 
-int keyring_store(struct credential* c)
+int keyring_store(struct credential *c)
 {
 	guint32 item_id;
 	char  *object = NULL;
@@ -130,7 +130,7 @@ int keyring_store(struct credential* c)
 	return EXIT_SUCCESS;
 }
 
-int keyring_erase( struct credential* c )
+int keyring_erase(struct credential *c)
 {
 	char  *object = NULL;
 	GList *entries;
