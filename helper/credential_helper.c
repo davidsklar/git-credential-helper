@@ -142,8 +142,8 @@ int main(int argc, char *argv[])
 	ret = (*try_op->op)(&cred);
 
 	credential_write(&cred);
-	credential_clear(&cred);
 
 out:
+	credential_clear(&cred);
 	return ret;
 }
