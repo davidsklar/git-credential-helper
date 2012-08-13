@@ -20,7 +20,7 @@
 /*
  * Credits:
  * - GNOME Keyring API handling originally written by John Szakmeister
- * - ported to simplified helper API by Philipp A. Hartmann
+ * - ported to credential helper API by Philipp A. Hartmann
  */
 
 #include <credential_helper.h>

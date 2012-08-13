@@ -4,7 +4,7 @@
  * This file is licensed under the GPL v2, or a later version
  * at the discretion of Linus.
  *
- * This credential struct and API simplified from git's
+ * This credential struct and API is simplified from git's
  * credential.{h,c} to be used within credential helper
  * implementations.
  */
@@ -54,7 +54,7 @@ struct credential_operation
  */
 extern struct credential_operation const credential_helper_ops[];
 
-/* ---------------- helper functions ---------------- */
+/* ---------------- common helper functions ---------------- */
 
 static inline void free_password(char *password)
 {
