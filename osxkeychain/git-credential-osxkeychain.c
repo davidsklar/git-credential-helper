@@ -21,10 +21,9 @@ static SecProtocolType protocol;
 
 static int prepare_internet_password(struct credential *c)
 {
-	if (!c->protocol || !c->host)
+	if (!c->protocol)
 		return -1;
-
-	if (!strcmp(c->protocol, "https"))
+	else if (!strcmp(c->protocol, "https"))
 		protocol = kSecProtocolTypeHTTPS;
 	else if (!strcmp(c->protocol, "http"))
 		protocol = kSecProtocolTypeHTTP;
