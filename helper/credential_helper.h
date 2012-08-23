@@ -28,7 +28,7 @@ struct credential
 };
 
 #define CREDENTIAL_INIT \
-  { 0,0,0,0,0,0 }
+  { NULL,NULL,0,NULL,NULL,NULL }
 
 void credential_init(struct credential *c);
 void credential_clear(struct credential *c);
@@ -44,7 +44,7 @@ struct credential_operation
 };
 
 #define CREDENTIAL_OP_END \
-  { 0, 0 }
+  { NULL,NULL }
 
 /*
  * Table with operation callbacks is defined in concrete
