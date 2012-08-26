@@ -99,7 +99,7 @@ static WCHAR *utf8_to_utf16_dup(const char *str)
 static char *utf16_to_utf8_dup(const WCHAR *wstr)
 {
 	int len = WideCharToMultiByte(CP_UTF8, 0, wstr, -1, NULL, 0, NULL,
-	          FALSE);
+		FALSE);
 	char *str = xmalloc(len);
 	if (!WideCharToMultiByte(CP_UTF8, 0, wstr, -1, str, len, NULL, FALSE))
 		die("WideCharToMultiByte failed");
@@ -327,4 +327,3 @@ struct credential_operation const credential_helper_ops[] =
 	{ "erase", erase_credential },
 	CREDENTIAL_OP_END
 };
-
