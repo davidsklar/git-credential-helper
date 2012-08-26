@@ -150,7 +150,7 @@ static int match_cred(const CREDENTIALW *cred, const struct credential *c)
 	return (!wusername || !wcscmp(wusername, cred->UserName)) &&
 	    match_attr(cred, L"git_protocol", c->protocol) &&
 	    match_attr(cred, L"git_host", c->host) &&
-	    match_attr(cred, L"git_port", port_buf) &&
+	    (c->port && match_attr(cred, L"git_port", port_buf)) &&
 	    match_attr(cred, L"git_path", c->path);
 }
 
