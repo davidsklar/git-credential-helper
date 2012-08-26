@@ -28,6 +28,7 @@ void credential_clear(struct credential *c)
 	free(c->path);
 	free(c->username);
 	free_password(c->password);
+	free(c->uri);
 
 	credential_init(c);
 }
@@ -84,6 +85,29 @@ int credential_read(struct credential *c)
 		 * learn new lines, and the helpers are updated to match.
 		 */
 	}
+
+	/* Rebuild URI from parts */
+	*buf = '\0';
+	if (c->protocol) {
+		strncat(buf, c->protocol, sizeof(buf));
+		strncat(buf, "://", sizeof(buf));
+	}
+	if (c->username) {
+		strncat(buf, c->username, sizeof(buf));
+		strncat(buf, "@", sizeof(buf));
+	}
+	if (c->host)
+		strncat(buf, c->host, sizeof(buf));
+	if (c->port) {
+		value = buf + strlen(buf);
+		snprintf(value, sizeof(buf)-(value-buf), ":%hd", c->port);
+	}
+	if (c->path) {
+		strncat(buf, "/", sizeof(buf));
+		strncat(buf, c->path, sizeof(buf));
+	}
+	c->uri = xstrdup(buf);
+
 	return 0;
 }
 

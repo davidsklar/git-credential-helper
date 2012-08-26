@@ -25,10 +25,11 @@ struct credential
 	char          *path;
 	char          *username;
 	char          *password;
+	char          *uri;     /* <protocol>://[username@][host[:port]][/path] */
 };
 
 #define CREDENTIAL_INIT \
-  { NULL,NULL,0,NULL,NULL,NULL }
+  { NULL,NULL,0,NULL,NULL,NULL,NULL }
 
 void credential_init(struct credential *c);
 void credential_clear(struct credential *c);
