@@ -1,9 +1,6 @@
 
 #include <credential_helper.h>
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
 #include <Security/Security.h>
 
 static SecProtocolType protocol;
@@ -21,16 +18,16 @@ static SecProtocolType protocol;
 
 static int prepare_internet_password(struct credential *c)
 {
-	if (!c->protocol)
-		return -1;
+	if (!c->protocol || !c->host)
+		return EXIT_FAILURE;
 	else if (!strcmp(c->protocol, "https"))
 		protocol = kSecProtocolTypeHTTPS;
 	else if (!strcmp(c->protocol, "http"))
 		protocol = kSecProtocolTypeHTTP;
 	else /* we don't yet handle other protocols */
-		return -1;
+		return EXIT_FAILURE;
 
-	return 0;
+	return EXIT_SUCCESS;
 }
 
 static void
@@ -80,14 +77,6 @@ static int delete_internet_password(struct credential *c)
 {
 	SecKeychainItemRef item;
 
-	/*
-	 * Require at least a protocol and host for removal, which is what git
-	 * will give us; if you want to do something more fancy, use the
-	 * Keychain manager.
-	 */
-	if (!c->protocol || !c->host)
-		return EXIT_FAILURE;
-
 	/* Silently ignore unsupported protocols */
 	if (prepare_internet_password(c))
 		return EXIT_SUCCESS;
@@ -104,7 +93,7 @@ static int delete_internet_password(struct credential *c)
 static int add_internet_password(struct credential *c)
 {
 	/* Only store complete credentials */
-	if (!c->protocol || !c->host || !c->username || !c->password)
+	if (!c->username || !c->password)
 		return EXIT_FAILURE;
 
 	if (prepare_internet_password(c))

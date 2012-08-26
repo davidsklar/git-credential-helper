@@ -138,11 +138,15 @@ int main(int argc, char *argv[])
 	if(ret)
 		goto out;
 
+	if (!cred.protocol || !(cred.host || cred.path)) {
+		ret = EXIT_FAILURE;
+		goto out;
+	}
+
 	/* perform credential operation */
 	ret = (*try_op->op)(&cred);
 
 	credential_write(&cred);
-
 out:
 	credential_clear(&cred);
 	return ret;

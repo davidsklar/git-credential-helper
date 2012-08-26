@@ -53,9 +53,6 @@ int keyring_get(struct credential *c)
 	GnomeKeyringNetworkPasswordData *password_data;
 	GnomeKeyringResult result;
 
-	if (!c->protocol || !(c->host || c->path))
-		return EXIT_FAILURE;
-
 	object = keyring_object(c);
 
 	result = gnome_keyring_find_network_password_sync(
@@ -101,15 +98,8 @@ int keyring_store(struct credential *c)
 	guint32 item_id;
 	char  *object = NULL;
 
-	/*
-	 * Sanity check that what we are storing is actually sensible.
-	 * In particular, we can't make a URL without a protocol field.
-	 * Without either a host or pathname (depending on the scheme),
-	 * we have no primary key. And without a username and password,
-	 * we are not actually storing a credential.
-	 */
-	if (!c->protocol || !(c->host || c->path) ||
-	    !c->username || !c->password)
+	/* Only store complete credentials */
+	if (!c->username || !c->password)
 		return EXIT_FAILURE;
 
 	object = keyring_object(c);
