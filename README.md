@@ -2,7 +2,7 @@
 Collection of Git credential helpers
 ====================================
 
-This repository contains a set of Git credential helpers (`gitcredentials(7)`) to be contributed to `git` at some appropriate time in the future.
+This repository contains a set of Git credential helpers (`gitcredentials(7)`) to be contributed to `git` at some appropriate time in the future.  The current discussion about its inclusion can be found [here](http://thread.gmane.org/gmane.comp.version-control.git/204154).
 
 Currently supported backends are
 
@@ -11,8 +11,10 @@ Currently supported backends are
     John Szakmeister <john@szakmeister.net>)
  * *Mac OS X Keychain*
    (taken from upstream git)
+ * *Windows Credential API*
+   (taken from upstream git)
 
-Both implementations here are based on a generic helper implementation, that provides the basic common infrastructure for new credential helpers.
+All of these implementations here are based on a generic helper implementation that provides the basic common infrastructure for new credential helpers.
 
 Installation & Usage
 --------------------
@@ -71,7 +73,7 @@ The `Makefile` in the individual backend directories can be used as a template t
 TODO
 ----
 
- * Submit this to the `contrib/` section of git.git
+ * Add global `init` and `cleanup` functions to the generic helper
  * Add support for command-line options via the generic helper
 
 
