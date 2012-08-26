@@ -11,6 +11,11 @@
 
 #include <credential_helper.h>
 
+#ifdef WIN32
+#include <fcntl.h>
+#include <io.h>
+#endif
+
 void credential_init(struct credential *c)
 {
 	memset(c, 0, sizeof(*c));
@@ -125,6 +130,12 @@ int main(int argc, char *argv[])
 		usage(argv[0]);
 		goto out;
 	}
+
+#ifdef WIN32
+	/* git on Windows uses binary pipes to avoid CRLF-issues */
+	_setmode(_fileno(stdin), _O_BINARY);
+	_setmode(_fileno(stdout), _O_BINARY);
+#endif
 
 	/* lookup operation callback */
 	while(try_op->name && strcmp(argv[1], try_op->name))
