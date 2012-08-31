@@ -25,7 +25,7 @@ struct credential
 	char          *path;
 	char          *username;
 	char          *password;
-	char          *uri;     /* <protocol>://[username@][host[:port]][/path] */
+	char          *url;     /* <protocol>://[username@][host[:port]][/path] */
 };
 
 #define CREDENTIAL_INIT \

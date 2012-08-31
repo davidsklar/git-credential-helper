@@ -28,7 +28,7 @@ void credential_clear(struct credential *c)
 	free(c->path);
 	free(c->username);
 	free_password(c->password);
-	free(c->uri);
+	free(c->url);
 
 	credential_init(c);
 }
@@ -106,7 +106,7 @@ int credential_read(struct credential *c)
 		strncat(buf, "/", sizeof(buf));
 		strncat(buf, c->path, sizeof(buf));
 	}
-	c->uri = xstrdup(buf);
+	c->url = xstrdup(buf);
 
 	return 0;
 }
