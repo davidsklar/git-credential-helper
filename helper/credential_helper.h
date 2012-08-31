@@ -125,6 +125,7 @@ static inline char *xstrdup(const char *str)
 	return ret;
 }
 
+#ifndef NO_STRNDUP
 static inline char *xstrndup(const char *str, size_t len)
 {
 	char *ret = strndup(str,len);
@@ -133,5 +134,6 @@ static inline char *xstrndup(const char *str, size_t len)
 
 	return ret;
 }
+#endif
 
 #endif /* CREDENTIAL_HELPER_H_INCLUDED_ */
