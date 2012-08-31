@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <io.h>
 #include <fcntl.h>
+#include <credential_helper.h>
 
 /* MinGW doesn't have wincred.h, so we need to define stuff */
 
@@ -124,9 +125,8 @@ static int prepare_credential(struct credential *c)
 		wusername = utf8_to_utf16_dup(c->username);
 	if (c->password)
 		wpassword = utf8_to_utf16_dup(c->password);
-	if (c->port) {
-		snprintf(port_buf,"%hd",c->port);
-	}
+	if (c->port)
+		snprintf(port_buf, sizeof(port_buf), "%hd", c->port);
 	return EXIT_SUCCESS;
 }
 
@@ -170,7 +170,7 @@ static int get_credential(struct credential *c)
 
 	/* search for the first credential that matches username */
 	for (i = 0; i < num_creds; ++i)
-		if (match_cred(creds[i])) {
+		if (match_cred(creds[i], c)) {
 			cred = creds[i];
 			break;
 		}
