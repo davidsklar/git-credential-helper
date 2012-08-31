@@ -232,13 +232,13 @@ static int store_credential(struct credential *c)
 	if (prepare_credential(c))
 		return EXIT_FAILURE;
 
+	if (!wusername || !wpassword)
+		return EXIT_FAILURE;
+
 	/* prepare 'target', the unique key for the credential */
 	strncat(target_buf,"git:",sizeof(target_buf));
 	strncat(target_buf,c->uri,sizeof(target_buf));
 	wtarget = utf8_to_utf16_dup(target_buf);
-
-	if (!wusername || !wpassword)
-		return EXIT_FAILURE;
 
 	/* query buffer size */
 	CredPackAuthenticationBufferW(0, wusername, wpassword,
