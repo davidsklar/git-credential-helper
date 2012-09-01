@@ -107,7 +107,7 @@ static inline void die_errno(int err)
 
 static inline void *xmalloc(size_t size)
 {
-  void *ret = malloc(size);
+	void *ret = malloc(size);
 	if (!ret && !size)
 		ret = malloc(1);
 	if (!ret)
