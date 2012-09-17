@@ -2,19 +2,17 @@
 Collection of Git credential helpers
 ====================================
 
-This repository contains a set of Git credential helpers (`gitcredentials(7)`) to be contributed to `git` at some appropriate time in the future.  The current discussion about its inclusion can be found [here](http://thread.gmane.org/gmane.comp.version-control.git/204154).
+This repository contains the set of Git credential helpers (`gitcredentials(7)`) that are part of `git` (or meant to be contributed in the future).
 
-Currently supported backends are
+The latest discussion about some refactoring can be found [here](http://thread.gmane.org/gmane.comp.version-control.git/204154).
+
+Currently supported git credential backends are
 
  * *GnomeKeyring*
-   (based on implementation from
-    John Szakmeister <john@szakmeister.net>)
  * *Mac OS X Keychain*
-   (taken from upstream git)
  * *Windows Credential API*
-   (taken from upstream git)
 
-All of these implementations here are based on a generic helper implementation that provides the basic common infrastructure for new credential helpers.
+Compared to the current upstream version, the implementations in this repository are based on a generic helper implementation that provides the basic common infrastructure for new credential helpers.
 
 Installation & Usage
 --------------------
